@@ -1,7 +1,7 @@
 
 #include "ex3_q1_given.h"
-
-#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define MAX_BUFFER 1024
+#define max(a,b) (((a) > (b)) ? (a) : (b)) 
 
 int mat[N][M];          
 int product_arr[M];
@@ -22,6 +22,7 @@ void set_row_in_mat(void* p_row);
 int main(){
 
     main_thread_id = (int)pthread_self();
+    char buffer[MAX_BUFFER];
 
     pthread_t init_threads[N], mul_threads[M], factor_threads[M];
     int* irets[max(N,M)]; 
@@ -32,13 +33,21 @@ int main(){
         int* pi = &i;
         irets[i] = pthread_create(&init_threads[i], NULL, set_row_in_mat, (void*)pi);
     }
+    print_msg(INIT_CREATED);
+
     // wait for all initailizers threads to finish
     for (int i = 0; i < N; i++){
         pthread_join(init_threads[i], NULL);
     }
 
-
-}
+    // check for failure in threads execution and exit if happened
+    for (int i = 0; i < N; i++){
+        if irets[i] != 0{
+            perror("Error in thread creation: ");
+            exit(-1);
+        }
+    }
+    print_msg(INIT_TERMINATED)
 
 void set_row_in_mat(void* p_row) {
 
