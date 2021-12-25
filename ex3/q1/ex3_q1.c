@@ -44,6 +44,9 @@ int main(){
 
     //for each value in index j of product_arr, factorize the value and write it to stdout
         for (int i = 0; i < M ; i++){
+            char buffer[MAX_BUFFER];
+            sprintf(buffer, "COLS [i] IS : %d", cols[i]);
+            atomic_print(buffer);
         irets[i] = pthread_create(&fac_threads[i], NULL, factorize, (void*)(cols+i));
     }
 
