@@ -41,8 +41,8 @@ pthread_cond_t mult_complete;
 void* set_row_in_mat(void* p_row);
 void* mul_max_nums_in_col(void* p_col);
 void* factorize(void* p_index);
-int find_max_in_col(int col);
-
+//int find_max_in_col(int col);
+void find2MaxNums(int col, int* max1, int* max2);
 // misc.
 
 void validate(int* irets, int t_count);
