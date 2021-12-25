@@ -22,10 +22,10 @@ utils.o: utils.c ex3_q1.h
 	gcc $(wCFLAGS) utils.c -lm
 	
 clean: 
-	rm -vf *.o $(PROG)
+	rm -vf *.o $(PROG) *.log
 	
 test: $(PROG)
 	@echo going to run test..
 
-	./$(PROG)  > out.log > err.log
+	./$(PROG)  > out.log 2> err.log
 

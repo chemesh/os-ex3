@@ -6,7 +6,7 @@ void validate(int* irets, int t_count){
     for (int i = 0; i < t_count ; i++){ 
         if (irets[i] != 0){
             char buffer[MAX_BUFFER];
-            sprintf(buffer,"error in thread %d, id: %d - return value from pthread_create call is %d", (int)pthread_self(), (int)getpid(), irets[i]);
+            sprintf(buffer,"error in thread %d, pid: %d - return value from pthread_create call is %d", (int)pthread_self(), (int)getpid(), irets[i]);
             my_exception(__LINE__, __func__,buffer);
         }
     }
@@ -24,27 +24,12 @@ void t_list_join(pthread_t* t_list, int t_list_size){
     }
 }
 
-//int find_max_in_col(int col){
-//    int max = mat[0][col];
-//    int index = 0;
-//    for (int i = 1; i < N; i++){
-//        if (mat[i][col] > max){
-//            max = mat[i][col];
-//            index = i;
-//        }
-//    }
-//    return index;
-//}
-
-
 void* set_row_in_mat(void* p_row) {
 
     int last = 0, row = *((int*)p_row);
     char buffer[MAX_BUFFER];
 
-    //print starting message
-    // create_msg(buffer,INITIALIZER,(int)pthread_self(),STARTING);
-    create_msg(buffer,INITIALIZER,(int)getpid(),STARTING);
+    create_msg(buffer,INITIALIZER,row+1,STARTING);
     atomic_print(buffer);
 
     for (int i = 0; i < M; ++i) {
@@ -61,7 +46,7 @@ void* set_row_in_mat(void* p_row) {
     // synchronized
     pthread_mutex_lock(handle_mtx);
     init_count++;
-    if (init_count == N - 1){
+    if (init_count == N){
         last = 1;
         //send signal to wake up mult_threads
         for (int i = 0; i < M; ++i){
@@ -78,13 +63,13 @@ void* set_row_in_mat(void* p_row) {
     }
 
     // print done message
-    create_msg(buffer,INITIALIZER,(int)pthread_self(),DONE);
+    create_msg(buffer,INITIALIZER,row+1,DONE);
     atomic_print(buffer);
 
     pthread_exit(NULL);
 }
 
-void find2MaxNums(int col, int* max1, int* max2)
+void find_2_max_nums(int col, int* max1, int* max2)
 {
     *max1 = *max2 = 0;
     int curr;
@@ -105,34 +90,27 @@ void find2MaxNums(int col, int* max1, int* max2)
 void* mul_max_nums_in_col(void* p_col){
 
     char buffer[MAX_BUFFER];
-    int val1, val2, ind1, ind2, col = *(int*)p_col;
+    int val1, val2, col = *(int*)p_col;
+
+    create_msg(buffer,MULTIPLIER,col+1,STARTING);
+    atomic_print(buffer);
 
     // wait for init threads to finish
-    // pthread_mutex_lock(&mult_lock);
-    while (init_count < N-1){
-        pthread_cond_wait(&init_complete, &mult_lock);  
+    pthread_mutex_lock(&mult_lock[col]);
+    while (init_count < N){
+        pthread_cond_wait(&init_complete, &mult_lock[col]);  
     }
+    pthread_mutex_unlock(&mult_lock[col]);
 
-    find2MaxNums(col, &val1, &val2);
-    create_msg(buffer,MULTIPLIER,(int)pthread_self(),STARTING);
-    atomic_print(buffer);
 
-    sprintf(buffer, "col: %d, val1: %d, val2: %d",col, val1, val2);
-    atomic_print(buffer);
-
-    //ind1 = find_max_in_col(col); //serach for the max number in the column
-    //val1 = mat[ind1][col];
-    //mat[ind1][col] = -1;    //temporarily remove the max num from mat
-
-    //ind2 = find_max_in_col(col); //serach for the 2nd max number in the column
-    //val2 = mat[ind2][col];
-    //mat[ind1][col] = val1;
-
+    find_2_max_nums(col, &val1, &val2);
     product_arr[col] = val1 * val2; //write the product to product_arr[j] where j = column index
+    // sprintf(buffer, "DEBUG: mult thread: %d, val1: %d, val2: %d",col+1, val1, val2);
+    // atomic_print(buffer);
 
     pthread_mutex_lock(handle_mtx);
     mult_count++;
-    if (mult_count == M - 1) {
+    if (mult_count == M) {
         //send signal to wake up fac_threads
         for (int i = 0; i < M; ++i){
             pthread_cond_signal(&mult_complete);
@@ -140,7 +118,7 @@ void* mul_max_nums_in_col(void* p_col){
     }
     pthread_mutex_unlock(handle_mtx);
 
-    create_msg(buffer,MULTIPLIER,(int)pthread_self(),DONE);
+    create_msg(buffer,MULTIPLIER,col+1,DONE);
     atomic_print(buffer);
 
     pthread_exit(NULL);
@@ -149,25 +127,30 @@ void* mul_max_nums_in_col(void* p_col){
 void* factorize(void* p_index){
 
     char buffer[MAX_BUFFER];
-    int fac1, fac2, prod = product_arr[*(int*)p_index];
+    int fac1, fac2, prod;
+    int index = *(int*)p_index;
     
-    sprintf(buffer, "PROD IS: %d", prod);
+    create_msg(buffer,FACTORIZER,index+1,STARTING);
     atomic_print(buffer);
-
+    
     // wait for mult threads to finish
-    // pthread_mutex_lock(&fac_lock);
-    while (mult_count < M-1){
-        pthread_cond_wait(&mult_complete, &fac_lock);  
+    pthread_mutex_lock(&fac_lock[index]);
+    while (mult_count < M){
+        pthread_cond_wait(&mult_complete, &fac_lock[index]);  
     }
-    create_msg(buffer,FACTORIZER,(int)pthread_self(),STARTING);
-    atomic_print(buffer);
+    pthread_mutex_unlock(&fac_lock[index]);
+
+    prod = product_arr[index];
+    // sprintf(buffer, "DEBUG: fac_thread #%d, PROD: %d", index, prod);
+    // atomic_print(buffer);
+
 
     set_factors(prod, &fac1, &fac2);
     pthread_mutex_lock(print_mtx);
     write_factors(prod, fac1, fac2);
     pthread_mutex_unlock(print_mtx);
     
-    create_msg(buffer,FACTORIZER,(int)pthread_self(),DONE);
+    create_msg(buffer,FACTORIZER,index+1,DONE);
     atomic_print(buffer);
 
     pthread_exit(NULL);
