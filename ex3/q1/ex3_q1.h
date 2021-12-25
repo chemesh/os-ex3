@@ -11,22 +11,22 @@
 /*********************** GLOBALS ************************/
 int mat[N][M];          
 int product_arr[M];
-int main_thread_id;     //id of the main thread
+int init_count, mult_count;
 
 pthread_mutex_t mtx1;
-extern pthread_mutex_t* mat_mtx;
+pthread_mutex_t* mat_mtx;
 
 pthread_mutex_t mtx2;
-extern pthread_mutex_t* mult_mtx;
+pthread_mutex_t* mult_mtx;
 
 pthread_mutex_t mtx3;
-extern pthread_mutex_t* prime_mtx;
+pthread_mutex_t* prime_mtx;
 
 pthread_mutex_t mtx4;
-extern pthread_mutex_t* print_mtx;
+pthread_mutex_t* print_mtx;
 
 pthread_mutex_t mtx5;
-extern pthread_mutex_t* handle_mtx;
+pthread_mutex_t* handle_mtx;
 
 pthread_mutex_t mult_lock;
 pthread_cond_t init_complete;
@@ -41,6 +41,7 @@ pthread_cond_t mult_complete;
 void* set_row_in_mat(void* p_row);
 void* mul_max_nums_in_col(void* p_col);
 void* factorize(void* p_index);
+int find_max_in_col(int col);
 
 // misc.
 
