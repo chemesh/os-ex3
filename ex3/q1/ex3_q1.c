@@ -1,15 +1,16 @@
 
 #include "ex3_q1.h"
 
-    pthread_mutex_t* mat_mtx = &mtx1;
-    pthread_mutex_t* mult_mtx = &mtx2;
-    pthread_mutex_t* prime_mtx = &mtx3;
-    pthread_mutex_t* print_mtx = &mtx4;
-    pthread_mutex_t* handle_mtx = &mtx5;
-
 int main(){
 
-    main_thread_id = (int)pthread_self();
+    mat_mtx = &mtx1;
+    mult_mtx = &mtx2;
+    prime_mtx = &mtx3;
+    print_mtx = &mtx4;
+    handle_mtx = &mtx5;
+    init_count = 0;
+    mult_count = 0;
+
     pthread_t init_threads[N], mul_threads[M], fac_threads[M];
     int irets[max(N,M)];
     // char buffer[MAX_BUFFER];
@@ -63,9 +64,5 @@ int main(){
     exit(0);
 }
 
-void t_list_join(pthread_t* t_list, int t_list_size){
-    for (int i = 0; i < t_list_size; i++){
-        pthread_join(t_list[i], NULL);
-    }
-}
+
 
